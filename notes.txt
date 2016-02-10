@@ -1,0 +1,41 @@
+3 phases:
+
+PHASE I: READ GAME STATE
+
+Getting game image from Ubuntu:
+ - see https://github.com/MaartenBaert/ssr for how to launch a program with GLInject intercepting OpenGL calls
+
+Getting game image from Raspbian:
+ - see https://github.com/AndrewFromMelbourne/raspi2fb for how to take screenshots on Raspbian
+ 
+Getting game image from NES:
+ - need a NTSC to USB converter (http://linuxtv.org/wiki/index.php/Easycap) then we can process images that come in
+ 
+Then we can compare the image to the image of an empty board and in the areas of difference, we try to match sprites 
+to identify what objects there are and what state they are in.
+
+Game State will consist of:
+ - current and recent historical (maybe 3-5 sec worth) location of objects
+ - metadata about each object (includes players), e.g. number of previous hits, current score, etc.
+
+ 
+PHASE 2: FIGURE OUT WHAT TO DO
+
+Low-level instructions:
+ - walk left
+ - run left
+ - walk right
+ - run right
+ - jump
+ - keep holding jump button
+
+
+PHASE 3: FEED INPUT TO GAME
+
+Options for feeding input into Retroarch / RetroPie:
+ - see https://github.com/tuomasjjrasanen/python-uinput for a python project that makes uinput really easy to use
+ - see https://github.com/miroof/node-virtual-gamepads for a node.js solution
+ - we could also write a USB device driver on a board to simulate a gamepad HID (would be needed if we wanted to plug into real NES)
+ 
+Getting game state to NES:
+ - write a board to simulate NES controller
