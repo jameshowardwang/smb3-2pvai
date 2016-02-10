@@ -12,7 +12,7 @@ Getting game image from NES:
  - need a NTSC to USB converter (http://linuxtv.org/wiki/index.php/Easycap) then we can process images that come in
  
 Then we can compare the image to the image of an empty board and in the areas of difference, we try to match sprites 
-to identify what objects there are and what state they are in.
+to identify what objects there are and what state they are in. Some ideas presented here: http://www.imagemagick.org/Usage/compare/
 
 Game State will consist of:
  - current and recent historical (maybe 3-5 sec worth) location of objects
