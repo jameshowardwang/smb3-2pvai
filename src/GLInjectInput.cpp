@@ -21,7 +21,6 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 #include "GLInjectInput.h"
 
 #include "Logger.h"
-#include "AVWrapper.h"
 #include "SSRVideoStreamWatcher.h"
 #include "SSRVideoStreamReader.h"
 
@@ -29,10 +28,10 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 // But it doesn't really matter, an attacker that can change GLInject options could just as easily change the actual GLInject command.
 // I copied the list of special characters from the PHP documentation:
 // http://be2.php.net/manual/en/function.escapeshellcmd.php
-static QString ShellEscape(QString str) {
+static std::string ShellEscape(std::string str) {
 	char specials[] = "\\#&;`|*?~<>^()[]{}$\x0a\xff\""; // backslash must be first
 	for(unsigned int i = 0; i < sizeof(specials); ++i) {
-		str.replace(QChar(specials[i]), QString("\\") + QChar(specials[i]));
+		str.replace(specials[i], std::string("\\") + specials[i]);
 	}
 	return str;
 }
@@ -40,7 +39,7 @@ static QString ShellEscape(QString str) {
 // The highest expected latency between GLInject and the input thread.
 const int64_t GLInjectInput::MAX_COMMUNICATION_LATENCY = 100000;
 
-GLInjectInput::GLInjectInput(const QString& channel, bool relax_permissions, bool record_cursor, bool limit_fps, unsigned int target_fps) {
+GLInjectInput::GLInjectInput(const std::string& channel, bool relax_permissions, bool record_cursor, bool limit_fps, unsigned int target_fps) {
 
 	m_channel = channel;
 	m_relax_permissions = relax_permissions;
@@ -93,20 +92,20 @@ void GLInjectInput::SetCapturing(bool capturing) {
 		lock->m_stream_reader->ChangeCaptureParameters(m_flags | ((lock->m_capturing)? GLINJECT_FLAG_CAPTURE_ENABLED : 0), m_target_fps);
 }
 
-bool GLInjectInput::LaunchApplication(const QString& channel, bool relax_permissions, const QString& command, const QString& working_directory) {
+bool GLInjectInput::LaunchApplication(const std::string& channel, bool relax_permissions, const std::string& command, const std::string& working_directory) {
 
 	// prepare command
-	QString full_command = "LD_PRELOAD=\"libssr-glinject.so\" ";
+	std::string full_command = "LD_PRELOAD=\"libssr-glinject.so\" ";
 	full_command += "SSR_CHANNEL=\"" + ShellEscape(channel) + "\" ";
 	if(relax_permissions)
 		full_command += "SSR_STREAM_RELAX_PERMISSIONS=1 ";
 	full_command += command;
 
 	// execute it
-	QStringList args;
+	std::stringList args;
 	args.push_back("-c");
 	args.push_back(full_command);
-	return QProcess::startDetached("/bin/sh", args, working_directory);
+	return false; // QProcess::startDetached("/bin/sh", args, working_directory); TODO: exec
 
 }
 
@@ -235,7 +234,7 @@ void GLInjectInput::InputThread() {
 
 			// push the frame
 			// we can do this even when we don't have the lock because only this thread will change the stream reader
-			PushVideoFrame(width, height, (uint8_t*) data, stride, AV_PIX_FMT_BGRA, timestamp);
+			PushVideoFrame(width, height, (uint8_t*) data, stride, PIX_FMT_BGRA, timestamp);
 
 			// go to the next frame
 			{

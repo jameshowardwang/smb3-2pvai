@@ -20,14 +20,13 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 #include "Global.h"
 
-#include "SourceSink.h"
 #include "MutexDataPair.h"
 
 class SSRVideoStream;
 class SSRVideoStreamWatcher;
 class SSRVideoStreamReader;
 
-class GLInjectInput : public VideoSource {
+class GLInjectInput {
 
 private:
 	struct SharedData {
@@ -41,7 +40,7 @@ private:
 	static const int64_t MAX_COMMUNICATION_LATENCY;
 
 private:
-	QString m_channel;
+	std::string m_channel;
 	bool m_relax_permissions;
 	unsigned int m_flags;
 	unsigned int m_target_fps;
@@ -51,7 +50,7 @@ private:
 	std::atomic<bool> m_should_stop, m_error_occurred;
 
 public:
-	GLInjectInput(const QString& channel, bool relax_permissions, bool record_cursor, bool limit_fps, unsigned int target_fps);
+	GLInjectInput(const std::string& channel, bool relax_permissions, bool record_cursor, bool limit_fps, unsigned int target_fps);
 	~GLInjectInput();
 
 	// Reads the current size of the stream. If the stream hasn't been started yet, this will be 0x0.
@@ -70,7 +69,7 @@ public:
 	// This function is thread-safe.
 	inline bool HasErrorOccurred() { return m_error_occurred; }
 
-	static bool LaunchApplication(const QString& channel, bool relax_permissions, const QString& command, const QString& working_directory);
+	static bool LaunchApplication(const std::string& channel, bool relax_permissions, const std::string& command, const std::string& working_directory);
 
 private:
 	void Init();

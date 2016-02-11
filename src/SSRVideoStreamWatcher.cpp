@@ -233,7 +233,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 			// handle events
 			if(event->mask & (IN_CREATE | IN_MOVED_TO)) {
 				if(std::find(m_streams.begin(), m_streams.end(), stream) == m_streams.end()) {
-					Logger::LogInfo("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Added stream %1.").arg(QString::fromStdString(stream.m_stream_name)));
+					Logger::LogInfo("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Added stream %1.").arg(std::string::fromStdString(stream.m_stream_name)));
 					m_streams.push_back(stream);
 					add_callback(stream, userdata);
 				}
@@ -241,7 +241,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 			if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
 				auto p = std::find(m_streams.begin(), m_streams.end(), stream);
 				if(p != m_streams.end()) {
-					Logger::LogInfo("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Removed stream %1.").arg(QString::fromStdString(stream.m_stream_name)));
+					Logger::LogInfo("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Removed stream %1.").arg(std::string::fromStdString(stream.m_stream_name)));
 					size_t index =  p - m_streams.begin();
 					m_streams.erase(p);
 					remove_callback(stream, index, userdata);
@@ -267,7 +267,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 		}
 		std::string filename = m_channel_directory + "/video-" + m_streams[j].m_stream_name;
 		unlink(filename.c_str());
-		Logger::LogInfo("[SSRVideoStreamWatcher::Init] " + Logger::tr("Deleted abandoned stream %1.").arg(QString::fromStdString(m_streams[j].m_stream_name)));
+		Logger::LogInfo("[SSRVideoStreamWatcher::Init] " + Logger::tr("Deleted abandoned stream %1.").arg(std::string::fromStdString(m_streams[j].m_stream_name)));
 
 		// remove the stream
 		SSRVideoStream stream = m_streams[j];
