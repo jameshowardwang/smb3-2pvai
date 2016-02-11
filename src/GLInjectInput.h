@@ -22,7 +22,7 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "MutexDataPair.h"
 
-class SSRVideoStream;
+struct SSRVideoStream;
 class SSRVideoStreamWatcher;
 class SSRVideoStreamReader;
 
