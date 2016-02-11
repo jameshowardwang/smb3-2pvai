@@ -45,7 +45,4 @@ public:
 
 	inline static Logger* GetInstance() { assert(s_instance != NULL); return s_instance; }
 
-signals:
-	void NewLine(Logger::enum_type type, std::string str);
-
 };

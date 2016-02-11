@@ -24,7 +24,6 @@ Logger *Logger::s_instance = NULL;
 
 Logger::Logger() {
 	assert(s_instance == NULL);
-	qRegisterMetaType<enum_type>();
 	s_instance = this;
 }
 
@@ -36,20 +35,17 @@ Logger::~Logger() {
 void Logger::LogInfo(const std::string& str) {
 	assert(s_instance != NULL);
 	std::lock_guard<std::mutex> lock(s_instance->m_mutex);
-	fprintf(stderr, "%s\n", str.toLocal8Bit().constData());
-	emit s_instance->NewLine(TYPE_INFO, str);
+	fprintf(stderr, "%s\n", str.c_str());
 }
 
 void Logger::LogWarning(const std::string& str) {
 	assert(s_instance != NULL);
 	std::lock_guard<std::mutex> lock(s_instance->m_mutex);
-	fprintf(stderr, "\033[1;33m%s\033[0m\n", str.toLocal8Bit().constData());
-	emit s_instance->NewLine(TYPE_WARNING, str);
+	fprintf(stderr, "\033[1;33m%s\033[0m\n", str.c_str());
 }
 
 void Logger::LogError(const std::string& str) {
 	assert(s_instance != NULL);
 	std::lock_guard<std::mutex> lock(s_instance->m_mutex);
-	fprintf(stderr, "\033[1;31m%s\033[0m\n", str.toLocal8Bit().constData());
-	emit s_instance->NewLine(TYPE_ERROR, str);
+	fprintf(stderr, "\033[1;31m%s\033[0m\n", str.c_str());
 }

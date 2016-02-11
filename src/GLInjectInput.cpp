@@ -31,7 +31,7 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 static std::string ShellEscape(std::string str) {
 	char specials[] = "\\#&;`|*?~<>^()[]{}$\x0a\xff\""; // backslash must be first
 	for(unsigned int i = 0; i < sizeof(specials); ++i) {
-		str.replace(specials[i], std::string("\\") + specials[i]);
+		//str.replace(specials[i], std::string("\\") + specials[i]);
 	}
 	return str;
 }
@@ -59,7 +59,7 @@ GLInjectInput::~GLInjectInput() {
 
 	// tell the thread to stop
 	if(m_thread.joinable()) {
-		Logger::LogInfo("[GLInjectInput::~GLInjectInput] " + Logger::tr("Stopping input thread ..."));
+		Logger::LogInfo("[GLInjectInput::~GLInjectInput] Stopping input thread ...");
 		m_should_stop = true;
 		m_thread.join();
 	}
@@ -102,10 +102,13 @@ bool GLInjectInput::LaunchApplication(const std::string& channel, bool relax_per
 	full_command += command;
 
 	// execute it
-	std::stringList args;
+/*
+	std::string args;
 	args.push_back("-c");
 	args.push_back(full_command);
-	return false; // QProcess::startDetached("/bin/sh", args, working_directory); TODO: exec
+        QProcess::startDetached("/bin/sh", args, working_directory);
+*/
+	return false; 
 
 }
 
@@ -115,7 +118,7 @@ void GLInjectInput::Init() {
 	{
 		SharedLock lock(&m_shared_data);
 		lock->m_capturing = false;
-		lock->m_stream_watcher.reset(new SSRVideoStreamWatcher(m_channel.toStdString(), m_relax_permissions));
+		lock->m_stream_watcher.reset(new SSRVideoStreamWatcher(m_channel, m_relax_permissions));
 	}
 
 	// start input thread
@@ -135,7 +138,7 @@ bool GLInjectInput::SwitchStream(SharedData* lock, const SSRVideoStream& stream)
 	try {
 
 		// create the stream reader
-		std::unique_ptr<SSRVideoStreamReader> stream_reader(new SSRVideoStreamReader(m_channel.toStdString(), stream));
+		std::unique_ptr<SSRVideoStreamReader> stream_reader(new SSRVideoStreamReader(m_channel, stream));
 
 		// initialize the stream
 		stream_reader->ChangeCaptureParameters(m_flags | ((lock->m_capturing)? GLINJECT_FLAG_CAPTURE_ENABLED : 0), m_target_fps);
@@ -145,7 +148,7 @@ bool GLInjectInput::SwitchStream(SharedData* lock, const SSRVideoStream& stream)
 		lock->m_stream_reader = std::move(stream_reader);
 
 	} catch(...) {
-		Logger::LogError("[GLInjectInput::SwitchStream] " + Logger::tr("Error: Could not read stream, this usually means that the stream was already gone."));
+		Logger::LogError("[GLInjectInput::SwitchStream] Error: Could not read stream, this usually means that the stream was already gone.");
 		return false;
 	}
 	return true;
@@ -176,7 +179,7 @@ void GLInjectInput::StreamRemoveCallback(const SSRVideoStream& stream, size_t po
 void GLInjectInput::InputThread() {
 	try {
 
-		Logger::LogInfo("[GLInjectInput::InputThread] " + Logger::tr("Input thread started."));
+		Logger::LogInfo("[GLInjectInput::InputThread] Input thread started.");
 
 		// deal with pre-existing streams
 		{
@@ -209,7 +212,6 @@ void GLInjectInput::InputThread() {
 
 				// do we have a stream reader?
 				if(lock->m_stream_reader == NULL) {
-					PushVideoPing(hrt_time_micro() - MAX_COMMUNICATION_LATENCY);
 					lock.lock().unlock(); // release lock before sleep
 					usleep(20000);
 					continue;
@@ -218,7 +220,6 @@ void GLInjectInput::InputThread() {
 				// is a frame ready?
 				data = lock->m_stream_reader->GetFrame(&timestamp, &width, &height, &stride);
 				if(data == NULL) {
-					PushVideoPing(hrt_time_micro() - MAX_COMMUNICATION_LATENCY);
 					lock.lock().unlock(); // release lock before sleep
 					usleep(20000);
 					continue;
@@ -232,10 +233,6 @@ void GLInjectInput::InputThread() {
 				data = (char*) data + (size_t) (-stride) * (size_t) (height - 1);
 			}
 
-			// push the frame
-			// we can do this even when we don't have the lock because only this thread will change the stream reader
-			PushVideoFrame(width, height, (uint8_t*) data, stride, PIX_FMT_BGRA, timestamp);
-
 			// go to the next frame
 			{
 				SharedLock lock(&m_shared_data);
@@ -244,13 +241,13 @@ void GLInjectInput::InputThread() {
 
 		}
 
-		Logger::LogInfo("[GLInjectInput::InputThread] " + Logger::tr("Input thread stopped."));
+		Logger::LogInfo("[GLInjectInput::InputThread] Input thread stopped.");
 
 	} catch(const std::exception& e) {
 		m_error_occurred = true;
-		Logger::LogError("[GLInjectInput::InputThread] " + Logger::tr("Exception '%1' in input thread.").arg(e.what()));
+		Logger::LogError(std::string("[GLInjectInput::InputThread] Exception ") + e.what() + "in input thread.");
 	} catch(...) {
 		m_error_occurred = true;
-		Logger::LogError("[GLInjectInput::InputThread] " + Logger::tr("Unknown exception in input thread."));
+		Logger::LogError("[GLInjectInput::InputThread] Unknown exception in input thread.");
 	}
 }

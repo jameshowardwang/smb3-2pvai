@@ -29,6 +29,7 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <algorithm>
 
 static bool SSRVideoStreamParse(const std::string& filename, SSRVideoStream* stream) {
 
@@ -85,29 +86,29 @@ void SSRVideoStreamWatcher::Init() {
 
 		// does the directory exist?
 		if(errno != EEXIST) {
-			Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Can't create channel directory!"));
+			Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Can't create channel directory!");
 			throw SSRStreamException();
 		}
 
 		// directory already exists, check ownership and permissions
 		struct stat statinfo;
 		if(lstat(m_channel_directory.c_str(), &statinfo) == -1) {
-			Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Can't stat channel directory!"));
+			Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Can't stat channel directory!");
 			throw SSRStreamException();
 		}
 		if(!S_ISDIR(statinfo.st_mode) || S_ISLNK(statinfo.st_mode)) {
-			Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Channel directory is not a regular directory!"));
+			Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Channel directory is not a regular directory!");
 			throw SSRStreamException();
 		}
 		if(statinfo.st_uid == geteuid()) {
 			if(chmod(m_channel_directory.c_str(), (m_relax_permissions)? 0777 : 0700) == -1) {
-				Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Can't set channel directory mode!"));
+				Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Can't set channel directory mode!");
 				throw SSRStreamException();
 			}
 		} else {
 			if(!m_relax_permissions) {
-				Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Channel directory is owned by a different user! "
-																				"Choose a different channel name, or enable relaxed file permissions to use it anyway."));
+				Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Channel directory is owned by a different user! "
+																				"Choose a different channel name, or enable relaxed file permissions to use it anyway.");
 				throw SSRStreamException();
 			}
 		}
@@ -118,13 +119,13 @@ void SSRVideoStreamWatcher::Init() {
 	// initialize inotify
 	m_fd_notify = inotify_init1(IN_CLOEXEC | IN_NONBLOCK);
 	if(m_fd_notify == -1) {
-		Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Can't initialize inotify!", "don't translate 'inotify'"));
+		Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Can't initialize inotify!");
 		throw SSRStreamException();
 	}
 
 	// watch channel directory
 	if(inotify_add_watch(m_fd_notify, m_channel_directory.c_str(), IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) == -1) {
-		Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Can't watch channel directory!"));
+		Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Can't watch channel directory!");
 		throw SSRStreamException();
 	}
 #endif
@@ -136,7 +137,7 @@ void SSRVideoStreamWatcher::Init() {
 		// open directory
 		dir = opendir(m_channel_directory.c_str());
 		if(dir == NULL) {
-			Logger::LogError("[SSRVideoStreamWatcher::Init] " + Logger::tr("Error: Can't open channel directory!"));
+			Logger::LogError("[SSRVideoStreamWatcher::Init] Error: Can't open channel directory!");
 			throw SSRStreamException();
 		}
 
@@ -154,7 +155,7 @@ void SSRVideoStreamWatcher::Init() {
 				continue;
 
 			// add the stream
-			Logger::LogInfo("[SSRVideoStreamWatcher::Init] " + Logger::tr("Added pre-existing stream %1.").arg(d->d_name));
+			Logger::LogInfo(std::string("[SSRVideoStreamWatcher::Init] Added pre-existing stream ") + d->d_name);
 			m_streams.push_back(stream);
 
 		}
@@ -189,7 +190,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 	// find out how much we can read
 	int len;
 	if(ioctl(m_fd_notify, FIONREAD, &len) == -1) {
-		Logger::LogError("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Error: Can't get read length from inotify!", "don't translate 'inotify'"));
+		Logger::LogError("[SSRVideoStreamWatcher::GetChanges] Error: Can't get read length from inotify!");
 		throw SSRStreamException();
 	}
 	if(len > 0) {
@@ -197,7 +198,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 		// read all the changes
 		std::vector<char> buffer(len);
 		if(read(m_fd_notify, buffer.data(), buffer.size()) != (ssize_t) buffer.size()) {
-			Logger::LogError("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Error: Can't read from inotify!", "don't translate 'inotify'"));
+			Logger::LogError("[SSRVideoStreamWatcher::GetChanges] Error: Can't read from inotify!");
 			throw SSRStreamException();
 		}
 
@@ -207,7 +208,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 
 			// read the event structure
 			if(buffer.size() - pos < sizeof(inotify_event)) {
-				Logger::LogError("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Error: Received partial event from inotify!", "don't translate 'inotify'"));
+				Logger::LogError("[SSRVideoStreamWatcher::GetChanges] Error: Received partial event from inotify!");
 				throw SSRStreamException();
 			}
 			inotify_event *event = (inotify_event*) (buffer.data() + pos);
@@ -219,7 +220,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 
 			// read the name
 			if(buffer.size() - pos < event->len) {
-				Logger::LogError("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Error: Received partial name from inotify!", "don't translate 'inotify'"));
+				Logger::LogError("[SSRVideoStreamWatcher::GetChanges] Error: Received partial name from inotify!");
 				throw SSRStreamException();
 			}
 			std::string name(buffer.data() + pos); // the name may be padded with null bytes that should be ignored
@@ -233,7 +234,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 			// handle events
 			if(event->mask & (IN_CREATE | IN_MOVED_TO)) {
 				if(std::find(m_streams.begin(), m_streams.end(), stream) == m_streams.end()) {
-					Logger::LogInfo("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Added stream %1.").arg(std::string::fromStdString(stream.m_stream_name)));
+					Logger::LogInfo(std::string("[SSRVideoStreamWatcher::GetChanges] Added stream ") + stream.m_stream_name);
 					m_streams.push_back(stream);
 					add_callback(stream, userdata);
 				}
@@ -241,7 +242,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 			if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
 				auto p = std::find(m_streams.begin(), m_streams.end(), stream);
 				if(p != m_streams.end()) {
-					Logger::LogInfo("[SSRVideoStreamWatcher::GetChanges] " + Logger::tr("Removed stream %1.").arg(std::string::fromStdString(stream.m_stream_name)));
+					Logger::LogInfo(std::string("[SSRVideoStreamWatcher::GetChanges] Removed stream ") + stream.m_stream_name);
 					size_t index =  p - m_streams.begin();
 					m_streams.erase(p);
 					remove_callback(stream, index, userdata);
@@ -267,7 +268,7 @@ void SSRVideoStreamWatcher::HandleChanges(AddCallback add_callback, RemoveCallba
 		}
 		std::string filename = m_channel_directory + "/video-" + m_streams[j].m_stream_name;
 		unlink(filename.c_str());
-		Logger::LogInfo("[SSRVideoStreamWatcher::Init] " + Logger::tr("Deleted abandoned stream %1.").arg(std::string::fromStdString(m_streams[j].m_stream_name)));
+		Logger::LogInfo(std::string("[SSRVideoStreamWatcher::Init] Deleted abandoned stream ") + m_streams[j].m_stream_name);
 
 		// remove the stream
 		SSRVideoStream stream = m_streams[j];

@@ -1,5 +1,5 @@
-CC=g++-4.6
-CFLAGS=-g -c -Wall
+CC=g++
+CFLAGS=-g -c -Wall -std=c++11
 LDFLAGS=
 SOURCES=main.cpp \
     GLInjectInput.cpp \
