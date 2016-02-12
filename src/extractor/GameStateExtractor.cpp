@@ -35,7 +35,7 @@ GameStateExtractor::GameStateExtractor()
                 GAMESCREEN_HEIGHT,
                 GAMESCREEN_WIDTH*4);
 
-        for (int i = 0; i < m_numSprites; i++)
+        for (int i = 0; i < (int) m_numSprites; i++)
         {
             std::string filename = std::string("../../images/sprites/bgra/") +
                 m_spriteStateConfig[i].bgraFilename;
@@ -331,7 +331,7 @@ void GameStateExtractor::ProcessGameState()
                 {
                     sIndex = 7;
                 }
-                while (sIndex < m_numSprites)
+                while (sIndex < (int) m_numSprites)
                 {
                     int score = _SpriteMatchScoreAtLocation(
                             m_spriteData[sIndex],
