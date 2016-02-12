@@ -10,7 +10,7 @@ static bool m_globalsInitialized = false;
 static unsigned char m_emptyGameScreen[GAMESCREEN_HEIGHT][GAMESCREEN_WIDTH];
 static unsigned char m_spriteData[m_numSprites][SPRITE_HEIGHT][SPRITE_WIDTH];
 
-class GameScreenRegion 
+class GameScreenRegion
 {
 public:
     GameScreenRegion(int i, int j) : lowX(i), highX(i), lowY(j), highY(j), numPixels(0)
@@ -32,13 +32,13 @@ GameStateExtractor::GameStateExtractor()
                 GAMESCREEN_HEIGHT,
                 "../../images/bgra/Board-empty.bgra",
                 GAMESCREEN_WIDTH,
-                GAMESCREEN_HEIGHT, 
+                GAMESCREEN_HEIGHT,
                 GAMESCREEN_WIDTH*4);
 
         for (int i = 0; i < m_numSprites; i++)
         {
             std::string filename = std::string("../../images/sprites/bgra/") +
-                    m_spriteStateConfig[i].bgraFilename;
+                m_spriteStateConfig[i].bgraFilename;
             _InitPaletteArrayFromFrameBufferFile(
                     (unsigned char *)m_spriteData[i],
                     SPRITE_WIDTH,
@@ -59,23 +59,23 @@ bool GameStateExtractor::InitFromBGRAFrameBuffer(void *data, int width, int heig
 {
     _InitPaletteArrayFromFrameBuffer(
             (unsigned char *)_gameScreen,
-            GAMESCREEN_WIDTH, 
+            GAMESCREEN_WIDTH,
             GAMESCREEN_HEIGHT,
             data,
             width,
-            height, 
+            height,
             stride);
     return true;
 }
 
 bool GameStateExtractor::_InitPaletteArrayFromFrameBuffer(
-    unsigned char *pa,
-    int paWidth,
-    int paHeight,
-    void *data, 
-    int fbWidth, 
-    int fbHeight, 
-    int fbStride)
+        unsigned char *pa,
+        int paWidth,
+        int paHeight,
+        void *data,
+        int fbWidth,
+        int fbHeight,
+        int fbStride)
 {
     int xOffset = (fbWidth > paWidth * 2) ? 1 : 0;
     int yOffset = (fbHeight > paHeight * 2) ? 1: 0;
@@ -109,22 +109,22 @@ bool GameStateExtractor::_InitPaletteArrayFromFrameBuffer(
 bool GameStateExtractor::InitFromBGRAFrameBufferFile(const std::string &filename, int width, int height, int stride)
 {
     return _InitPaletteArrayFromFrameBufferFile(
-        (unsigned char *)_gameScreen,
-        GAMESCREEN_WIDTH,
-        GAMESCREEN_HEIGHT,
-        filename,
-        width,
-        height,
-        stride);
+            (unsigned char *)_gameScreen,
+            GAMESCREEN_WIDTH,
+            GAMESCREEN_HEIGHT,
+            filename,
+            width,
+            height,
+            stride);
 }
 
 bool GameStateExtractor::_InitPaletteArrayFromFrameBufferFile(
         unsigned char *pa,
         int paWidth,
         int paHeight,
-        const std::string &filename, 
-        int fbWidth, 
-        int fbHeight, 
+        const std::string &filename,
+        int fbWidth,
+        int fbHeight,
         int fbStride)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
@@ -138,18 +138,18 @@ bool GameStateExtractor::_InitPaletteArrayFromFrameBufferFile(
                 (unsigned char *)pa,
                 paWidth,
                 paHeight,
-                buffer.data(), 
+                buffer.data(),
                 fbWidth,
                 fbHeight,
-                fbStride); 
+                fbStride);
     }
-                
+
     return false;
 }
 
 unsigned char GameStateExtractor::_IndexOfClosestPaletteColor(
-        unsigned char red, 
-        unsigned char green, 
+        unsigned char red,
+        unsigned char green,
         unsigned char blue,
         unsigned char alpha)
 {
@@ -192,7 +192,7 @@ int GameStateExtractor::_CalculateBitmapDiff()
             if (m_emptyGameScreen[i][j] == _gameScreen[i][j])
             {
                 _gameScreenDiff[i][j] = 0;
-            } 
+            }
             else
             {
                 _gameScreenDiff[i][j] = -1;
@@ -204,7 +204,7 @@ int GameStateExtractor::_CalculateBitmapDiff()
 }
 
 typedef std::pair<int, int> intPair;
-GameScreenRegion GameStateExtractor::_FillRegion(int initialY, int initialX, int fill)
+GameScreenRegion GameStateExtractor::_FillRegion(int initialX, int initialY, int fill)
 {
     GameScreenRegion region(initialX, initialY);
 
@@ -236,7 +236,7 @@ GameScreenRegion GameStateExtractor::_FillRegion(int initialY, int initialX, int
             for (int j = p.second-1; j <= p.second+1; j++)
             {
                 if (i > 0 && i < GAMESCREEN_HEIGHT && j > 0 && j < GAMESCREEN_WIDTH &&
-                    !(i == p.first && j == p.second))
+                        !(i == p.first && j == p.second))
                 {
                     if (_gameScreenDiff[i][j] == -1)
                     {
@@ -259,7 +259,7 @@ void GameStateExtractor::_DetectDiffRegions()
             if (_gameScreenDiff[i][j] == -1)
             {
                 numRegions += 1;
-                GameScreenRegion region = _FillRegion(i, j, numRegions);
+                GameScreenRegion region = _FillRegion(j, i, numRegions);
                 if (region.numPixels > 10)
                 {
                     _regions.push_back(region);
@@ -273,9 +273,35 @@ void GameStateExtractor::_DetectDiffRegions()
     }
 }
 
-int GameStateExtractor::_SpriteMatchScoreAtLocation(unsigned char **sprite, int x, int y)
+int GameStateExtractor::_SpriteMatchScoreAtLocation(
+        unsigned char sprite[SPRITE_HEIGHT][SPRITE_WIDTH],
+        int x,
+        int y)
 {
-    return 0;
+    int score = 0;
+    int activePixels = 0;
+
+    for (int i = 0; i < SPRITE_HEIGHT && y+i < GAMESCREEN_HEIGHT; i++)
+    {
+        for (int j = 0; j < SPRITE_WIDTH; j++)
+        {
+            if (sprite[i][j] == 0) // transparent
+            {
+                if (_gameScreenDiff[y+i][(x+j)%GAMESCREEN_WIDTH] == 0)
+                {
+                }
+            }
+            else
+            {
+                activePixels++;
+                if (_gameScreen[y+i][(x+j)%GAMESCREEN_WIDTH] == sprite[i][j])
+                {
+                    score += 1; // add a point if the pixels match in color
+                }
+            }
+        }
+    }
+    return score * 100 / activePixels;
 }
 
 void GameStateExtractor::ProcessGameState()
@@ -285,12 +311,60 @@ void GameStateExtractor::ProcessGameState()
 
     _DetectDiffRegions();
     for (std::vector<GameScreenRegion>::iterator it = _regions.begin(); it != _regions.end(); ++it) {
-        std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY << 
+        std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY <<
             ") to (" << it->highX << ", " << it->highY << ")\n";
+
+        int maxScore = 0;
+        int bestSprite = -1;
+        int posX, posY;
+        for (int i = std::max(it->lowY - 8, 0); i < std::max(it->highY - 8, 0); i++)
+        {
+            for (int j = it->lowX - 8; j < it->highX - 8; j++)
+            {
+                int sIndex;
+                if (abs(i-153) < 3 && abs(j-120) < 3)
+                {
+                    // only check for POW at this location
+                    sIndex = 4;
+                }
+                else
+                {
+                    sIndex = 7;
+                }
+                while (sIndex < m_numSprites)
+                {
+                    int score = _SpriteMatchScoreAtLocation(
+                            m_spriteData[sIndex],
+                            j % GAMESCREEN_WIDTH,
+                            i);
+                    if (score > maxScore)
+                    {
+                        maxScore = score;
+                        bestSprite = sIndex;
+                        posX = j % GAMESCREEN_WIDTH;
+                        posY = i;
+                    }
+                    sIndex++;
+                }
+            }
+        }
+        std::cout << "Best matching sprite: " << m_spriteStateConfig[bestSprite].bgraFilename <<
+            " with score " << maxScore << " at (" << posX << ", " << posY << ")\n";
+
+        if (maxScore > 20)
+        {
+            GameObjectState g(
+                    m_spriteStateConfig[bestSprite].spriteState,
+                    (posX+8) % GAMESCREEN_WIDTH,
+                    posY+8);
+            _gameObjects.push_back(g);
+        }
     }
+
 }
 
-void GameStateExtractor::WriteRGBDataToFile(const std::string &filename)
+// debug function
+void GameStateExtractor::_WriteRGBDataToFile(const std::string &filename)
 {
     std::ofstream file(filename, std::ofstream::trunc);
     for (int i = 0; i < GAMESCREEN_HEIGHT; i++)
@@ -299,16 +373,16 @@ void GameStateExtractor::WriteRGBDataToFile(const std::string &filename)
         {
             file << (int) m_emptyGameScreen[i][j] << "-" << (int) _gameScreen[i][j] << "\n";
             /*
-            ColorRGB c = SMB2PVPalette[_gameScreen[i][j]];
-            if (_gameScreen[i][j] == 0)
-            {
-                file << (char) 0 << (char) 0 << (char) 0 << (char) 0;
-            }
-            else
-            {
-                file << c.blue << c.green << c.red << (char) 255;
-            }
-            */
+               ColorRGB c = SMB2PVPalette[_gameScreen[i][j]];
+               if (_gameScreen[i][j] == 0)
+               {
+               file << (char) 0 << (char) 0 << (char) 0 << (char) 0;
+               }
+               else
+               {
+               file << c.blue << c.green << c.red << (char) 255;
+               }
+             */
         }
     }
     file.close();

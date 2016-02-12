@@ -101,4 +101,42 @@ const ColorRGB SMB2PVPalette[SMB2PVPALETTESIZE] =
     {168,16,0}
 };
 
+enum SpriteState
+{
+    ScoreCoin = 1,
+    Coin,
+    Crab,
+    CrabAngry,
+    CrabDead,
+    Fireball,
+    Jumper,
+    JumperDead,
+    LuigiBumpLeft,
+    LuigiBumpRight,
+    LuigiDazed,
+    LuigiDead,
+    LuigiJumpLeft,
+    LuigiJumpRight,
+    LuigiStandLeft,
+    LuigiStandRight,
+    LuigiWalkLeft,
+    LuigiWalkRight,
+    MarioBumpLeft,
+    MarioBumpRight,
+    MarioDazed,
+    MarioDead,
+    MarioJumpLeft,
+    MarioJumpRight,
+    MarioStandLeft,
+    MarioStandRight,
+    MarioWalkLeft,
+    MarioWalkRight,
+    POWFull,
+    POWTwoLeft,
+    POWOneLeft,
+    SpinyLeft,
+    SpinyRight,
+    SpinyDead
+};
+
 #endif

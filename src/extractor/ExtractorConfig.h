@@ -2,44 +2,6 @@
 #ifndef EXTRACTORCONFIG_H
 #define EXTRACTORCONFIG_H
 
-enum SpriteState
-{
-    ScoreCoin = 1,
-    Coin,
-    Crab,
-    CrabAngry,
-    CrabDead,
-    Fireball,
-    Jumper,
-    JumperDead,
-    LuigiBumpLeft,
-    LuigiBumpRight,
-    LuigiDazed,
-    LuigiDead,
-    LuigiJumpLeft,
-    LuigiJumpRight,
-    LuigiStandLeft,
-    LuigiStandRight,
-    LuigiWalkLeft,
-    LuigiWalkRight,
-    MarioBumpLeft,
-    MarioBumpRight,
-    MarioDazed,
-    MarioDead,
-    MarioJumpLeft,
-    MarioJumpRight,
-    MarioStandLeft,
-    MarioStandRight,
-    MarioWalkLeft,
-    MarioWalkRight,
-    POWFull,
-    POWTwoLeft,
-    POWOneLeft,
-    SpinyLeft,
-    SpinyRight,
-    SpinyDead
-};
-
 struct SpriteStateConfigEntry
 {
     const char* bgraFilename;
@@ -51,7 +13,13 @@ const SpriteStateConfigEntry m_spriteStateConfig[] =
     {"Coin-1.bgra", Coin},
     {"Coin-2.bgra", Coin},
     {"Coin-3.bgra", Coin},
+
     {"Coin-score.bgra", ScoreCoin},
+
+    {"POW-full.bgra", POWFull},
+    {"POW-one.bgra", POWOneLeft},
+    {"POW-two.bgra", POWTwoLeft},
+
     {"Crab-1.bgra", Crab},
     {"Crab-2.bgra", Crab},
     {"Crab-angry-1.bgra", CrabAngry},
@@ -91,9 +59,6 @@ const SpriteStateConfigEntry m_spriteStateConfig[] =
     {"Mario-standing-right.bgra", MarioStandRight},
     {"Mario-walking-left.bgra", MarioWalkLeft},
     {"Mario-walking-right.bgra", MarioWalkRight},
-    {"POW-full.bgra", POWFull},
-    {"POW-one.bgra", POWOneLeft},
-    {"POW-two.bgra", POWTwoLeft},
     {"Spiny-dead-left.bgra", SpinyDead},
     {"Spiny-dead-right.bgra", SpinyDead},
     {"Spiny-left-1.bgra", SpinyLeft},
