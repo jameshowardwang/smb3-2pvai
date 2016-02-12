@@ -14,20 +14,43 @@ public:
     GameStateExtractor();
     virtual ~GameStateExtractor();
 
-    bool InitFromBGRAFrameBuffer(void *data, int width, int height, int stride);
-    bool InitFromBGRAFrameBufferFile(const std::string &filename, int width, int height, int stride);
+    bool InitFromBGRAFrameBuffer(
+            void *data, 
+            int width, 
+            int height, 
+            int stride);
+    bool InitFromBGRAFrameBufferFile(
+            const std::string &filename, 
+            int width, 
+            int height, 
+            int stride);
     void ProcessGameState();
 
     void WriteRGBDataToFile(const std::string &filename);
 
 private:
-    bool _InitGameScreenFromFrameBuffer(unsigned char gameScreen[][GAMESCREEN_WIDTH], void *data, int width, int height, int stride);
-    bool _InitGameScreenFromFrameBufferFile(const std::string &filename, unsigned char gameScreen[][GAMESCREEN_WIDTH], int width, int height, int stride);
-    unsigned char _IndexOfClosestPaletteColor(
+    static bool _InitPaletteArrayFromFrameBuffer(
+            unsigned char *pa,
+            int paWidth,
+            int paHeight,
+            void *data, 
+            int fbWidth, 
+            int fbHeight, 
+            int fbStride);
+    static bool _InitPaletteArrayFromFrameBufferFile(
+            unsigned char *pa,
+            int paWidth,
+            int paHeight,
+            const std::string &filename, 
+            int fbWidth, 
+            int fbHeight, 
+            int fbStride);
+    static unsigned char _IndexOfClosestPaletteColor(
             unsigned char red, 
             unsigned char green, 
             unsigned char blue,
             unsigned char alpha);
+
     int _CalculateBitmapDiff();
     GameScreenRegion _FillRegion(int initialX, int initialY, int fill);
     void _DetectDiffRegions();

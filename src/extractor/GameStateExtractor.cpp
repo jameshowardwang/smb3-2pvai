@@ -1,12 +1,14 @@
 #include "GameStateExtractor.h"
+#include "ExtractorConfig.h"
 
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
-static bool m_emptyGameScreenInitialized = false;
+static bool m_globalsInitialized = false;
 static unsigned char m_emptyGameScreen[GAMESCREEN_HEIGHT][GAMESCREEN_WIDTH];
+static unsigned char m_spriteData[m_numSprites][SPRITE_HEIGHT][SPRITE_WIDTH];
 
 class GameScreenRegion 
 {
@@ -21,10 +23,31 @@ public:
 
 GameStateExtractor::GameStateExtractor()
 {
-    if (!m_emptyGameScreenInitialized)
+    if (!m_globalsInitialized)
     {
-        m_emptyGameScreenInitialized = true;
-        _InitGameScreenFromFrameBufferFile("Board-empty.bgra", m_emptyGameScreen, GAMESCREEN_WIDTH, GAMESCREEN_HEIGHT, GAMESCREEN_WIDTH*4);
+        m_globalsInitialized = true;
+        _InitPaletteArrayFromFrameBufferFile(
+                (unsigned char *)m_emptyGameScreen,
+                GAMESCREEN_WIDTH,
+                GAMESCREEN_HEIGHT,
+                "../../images/bgra/Board-empty.bgra",
+                GAMESCREEN_WIDTH,
+                GAMESCREEN_HEIGHT, 
+                GAMESCREEN_WIDTH*4);
+
+        for (int i = 0; i < m_numSprites; i++)
+        {
+            std::string filename = std::string("../../images/sprites/bgra/") +
+                    m_spriteStateConfig[i].bgraFilename;
+            _InitPaletteArrayFromFrameBufferFile(
+                    (unsigned char *)m_spriteData[i],
+                    SPRITE_WIDTH,
+                    SPRITE_HEIGHT,
+                    filename,
+                    SPRITE_WIDTH,
+                    SPRITE_HEIGHT,
+                    SPRITE_HEIGHT*4);
+        }
     }
 }
 
@@ -34,38 +57,50 @@ GameStateExtractor::~GameStateExtractor()
 
 bool GameStateExtractor::InitFromBGRAFrameBuffer(void *data, int width, int height, int stride)
 {
-    _InitGameScreenFromFrameBuffer(_gameScreen, data, width, height, stride);
+    _InitPaletteArrayFromFrameBuffer(
+            (unsigned char *)_gameScreen,
+            GAMESCREEN_WIDTH, 
+            GAMESCREEN_HEIGHT,
+            data,
+            width,
+            height, 
+            stride);
     return true;
 }
 
-bool GameStateExtractor::_InitGameScreenFromFrameBuffer(unsigned char gameScreen[][GAMESCREEN_WIDTH], void *data, int width, int height, int stride)
+bool GameStateExtractor::_InitPaletteArrayFromFrameBuffer(
+    unsigned char *pa,
+    int paWidth,
+    int paHeight,
+    void *data, 
+    int fbWidth, 
+    int fbHeight, 
+    int fbStride)
 {
-    // downsample to NES resolution and palette
-
-    int xOffset = (width > GAMESCREEN_WIDTH * 2) ? 1 : 0;
-    int yOffset = (height > GAMESCREEN_HEIGHT * 2) ? 1: 0;
+    int xOffset = (fbWidth > paWidth * 2) ? 1 : 0;
+    int yOffset = (fbHeight > paHeight * 2) ? 1: 0;
 
     unsigned char *imageBytes = (unsigned char *) data;
 
-    for (int y = 0; y < GAMESCREEN_HEIGHT; y++)
+    for (int y = 0; y < paHeight; y++)
     {
-        int yImage = y * height / GAMESCREEN_HEIGHT + yOffset;
-        for (int x = 0; x < GAMESCREEN_WIDTH; x++)
+        int yImage = y * fbHeight / paHeight + yOffset;
+        for (int x = 0; x < paWidth; x++)
         {
-            int xImage = x * width / GAMESCREEN_WIDTH + xOffset;
+            int xImage = x * fbWidth / paWidth + xOffset;
             unsigned char *base;
-            if (stride > 0)
+            if (fbStride > 0)
             {
-                base = imageBytes + yImage * stride + xImage * 4;
+                base = imageBytes + yImage * fbStride + xImage * 4;
             } else {
-                base = imageBytes + (height-1 - yImage) * (-stride) + xImage * 4;
+                base = imageBytes + (fbHeight-1 - yImage) * (-fbStride) + xImage * 4;
             }
 
             int blue = *base;
             int green = *(base+1);
             int red = *(base+2);
             int alpha = *(base+3);
-            gameScreen[y][x] = _IndexOfClosestPaletteColor(red, green, blue, alpha);
+            *(pa+y*paWidth+x) = _IndexOfClosestPaletteColor(red, green, blue, alpha);
         }
     }
     return true;
@@ -73,11 +108,24 @@ bool GameStateExtractor::_InitGameScreenFromFrameBuffer(unsigned char gameScreen
 
 bool GameStateExtractor::InitFromBGRAFrameBufferFile(const std::string &filename, int width, int height, int stride)
 {
-    return _InitGameScreenFromFrameBufferFile(filename, _gameScreen, width, height, stride);
+    return _InitPaletteArrayFromFrameBufferFile(
+        (unsigned char *)_gameScreen,
+        GAMESCREEN_WIDTH,
+        GAMESCREEN_HEIGHT,
+        filename,
+        width,
+        height,
+        stride);
 }
 
-bool GameStateExtractor::_InitGameScreenFromFrameBufferFile(const std::string &filename, unsigned char
-gameScreen[][GAMESCREEN_WIDTH], int width, int height, int stride)
+bool GameStateExtractor::_InitPaletteArrayFromFrameBufferFile(
+        unsigned char *pa,
+        int paWidth,
+        int paHeight,
+        const std::string &filename, 
+        int fbWidth, 
+        int fbHeight, 
+        int fbStride)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     std::streamsize size = file.tellg();
@@ -86,7 +134,14 @@ gameScreen[][GAMESCREEN_WIDTH], int width, int height, int stride)
     std::vector<char> buffer(size);
     if (file.read(buffer.data(), size))
     {
-        return _InitGameScreenFromFrameBuffer(gameScreen, buffer.data(), width, height, stride); 
+        return _InitPaletteArrayFromFrameBuffer(
+                (unsigned char *)pa,
+                paWidth,
+                paHeight,
+                buffer.data(), 
+                fbWidth,
+                fbHeight,
+                fbStride); 
     }
                 
     return false;

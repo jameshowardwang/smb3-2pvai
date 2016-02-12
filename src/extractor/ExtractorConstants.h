@@ -4,6 +4,8 @@
 
 #define GAMESCREEN_WIDTH 256
 #define GAMESCREEN_HEIGHT 240 
+#define SPRITE_WIDTH 16
+#define SPRITE_HEIGHT 16
 
 typedef struct ColorRGB
 {
