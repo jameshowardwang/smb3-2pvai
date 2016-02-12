@@ -160,6 +160,14 @@ GameScreenRegion GameStateExtractor::_FillRegion(int initialY, int initialX, int
     {
         intPair p = pixelsToVisit.back();
         pixelsToVisit.pop_back();
+
+        // make sure we don't re-visit a node that's already been processed
+        // we could check if this node is already in the stack before adding but this seems faster
+        if (_gameScreenDiff[p.first][p.second] != -1)
+        {
+            continue;
+        }
+
         _gameScreenDiff[p.first][p.second] = fill;
 
         region.numPixels++;
