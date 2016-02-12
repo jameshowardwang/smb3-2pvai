@@ -163,7 +163,7 @@ unsigned char GameStateExtractor::_IndexOfClosestPaletteColor(
 
     if (alpha < 200)
     {
-        std::cerr << "Alpha: " << (int) alpha << "\n";
+//        std::cerr << "Alpha: " << (int) alpha << "\n";
     }
 
     for (int i = 1; i < SMB2PVPALETTESIZE; i++) // index 0 is reserved for transparency
@@ -266,7 +266,7 @@ void GameStateExtractor::_DetectDiffRegions()
                 }
                 else
                 {
-                    std::cout << "Detected a region of size " << region.numPixels << "\n";
+                    //std::cout << "Detected a region of size " << region.numPixels << "\n";
                 }
             }
         }
@@ -306,13 +306,20 @@ int GameStateExtractor::_SpriteMatchScoreAtLocation(
 
 void GameStateExtractor::ProcessGameState()
 {
+    _regions.clear();
+    _gameObjects.clear();
+
     int numPixels = _CalculateBitmapDiff();
-    std::cout << "Number of differing pixels: " << numPixels << "\n";
+    //std::cout << "Number of differing pixels: " << numPixels << "\n";
+    if (numPixels > 4000)
+    {
+        return;
+    }
 
     _DetectDiffRegions();
     for (std::vector<GameScreenRegion>::iterator it = _regions.begin(); it != _regions.end(); ++it) {
-        std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY <<
-            ") to (" << it->highX << ", " << it->highY << ")\n";
+        //std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY <<
+            //") to (" << it->highX << ", " << it->highY << ")\n";
 
         int maxScore = 0;
         int bestSprite = -1;
@@ -348,8 +355,8 @@ void GameStateExtractor::ProcessGameState()
                 }
             }
         }
-        std::cout << "Best matching sprite: " << m_spriteStateConfig[bestSprite].bgraFilename <<
-            " with score " << maxScore << " at (" << posX << ", " << posY << ")\n";
+        //std::cout << "Best matching sprite: " << m_spriteStateConfig[bestSprite].bgraFilename <<
+            //" with score " << maxScore << " at (" << posX << ", " << posY << ")\n";
 
         if (maxScore > 20)
         {

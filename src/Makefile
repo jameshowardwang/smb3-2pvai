@@ -1,11 +1,12 @@
 CC=g++
-CFLAGS=-g -c -Wall -std=c++11
-LDFLAGS=
+CFLAGS=-g -c -Wall -std=c++11 -pthread
+LDFLAGS= -pthread
 SOURCES=main.cpp \
     GLInjectInput.cpp \
     Logger.cpp \
     SSRVideoStreamWatcher.cpp \
-    SSRVideoStreamReader.cpp
+    SSRVideoStreamReader.cpp \
+    extractor/GameStateExtractor.cpp
 
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=smb3frameprocessor

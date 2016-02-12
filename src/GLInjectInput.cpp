@@ -23,6 +23,7 @@ along with SimpleScreenRecorder.  If not, see <http://www.gnu.org/licenses/>.
 #include "Logger.h"
 #include "SSRVideoStreamWatcher.h"
 #include "SSRVideoStreamReader.h"
+#include "extractor/GameStateExtractor.h"
 
 // Escapes characters so the string can be used in a shell command. It may not be 100% secure (character encoding can complicate things).
 // But it doesn't really matter, an attacker that can change GLInject options could just as easily change the actual GLInject command.
@@ -106,7 +107,7 @@ bool GLInjectInput::LaunchApplication(const std::string& channel, bool relax_per
 	std::string args;
 	args.push_back("-c");
 	args.push_back(full_command);
-        QProcess::startDetached("/bin/sh", args, working_directory);
+		QProcess::startDetached("/bin/sh", args, working_directory);
 */
 	return false; 
 
@@ -194,8 +195,8 @@ void GLInjectInput::InputThread() {
 
 		int64_t next_watcher_update = hrt_time_micro();
 
+		GameStateExtractor game_state_extractor;
 		while(!m_should_stop) {
-
 			// try to get a frame
 			int64_t timestamp;
 			unsigned int width, height;
@@ -227,18 +228,14 @@ void GLInjectInput::InputThread() {
 
 			}
 
-			// if the stride is negative, change the pointer
-			// this is needed because OpenGL stores frames upside-down
-			if(stride < 0) {
-				data = (char*) data + (size_t) (-stride) * (size_t) (height - 1);
-			}
+			game_state_extractor.InitFromBGRAFrameBuffer(data, width, height, stride);
+			game_state_extractor.ProcessGameState();
 
 			// go to the next frame
 			{
 				SharedLock lock(&m_shared_data);
 				lock->m_stream_reader->NextFrame();
 			}
-
 		}
 
 		Logger::LogInfo("[GLInjectInput::InputThread] Input thread stopped.");
