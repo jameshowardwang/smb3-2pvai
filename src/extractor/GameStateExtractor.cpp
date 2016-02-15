@@ -2,13 +2,21 @@
 #include "ExtractorConfig.h"
 
 #include <cassert>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <unistd.h>
+#include <sys/file.h>
+#include <sys/mman.h>
+#include <sys/types.h>
 
 static bool m_globalsInitialized = false;
 static unsigned char m_emptyGameScreen[GAMESCREEN_HEIGHT][GAMESCREEN_WIDTH];
 static unsigned char m_spriteData[m_numSprites][SPRITE_HEIGHT][SPRITE_WIDTH];
+int m_fd_gamestate;
+void *m_mmap_ptr_gamestate;
+
 
 class GameScreenRegion
 {
@@ -47,6 +55,23 @@ GameStateExtractor::GameStateExtractor()
                     SPRITE_WIDTH,
                     SPRITE_HEIGHT,
                     SPRITE_HEIGHT*4);
+        }
+
+        m_fd_gamestate = open("gamestate", O_RDWR | O_CREAT | O_CLOEXEC, 0666 );
+        if (m_fd_gamestate == -1) {
+            std::cerr << "Error: Can't open gamestate file!";
+            return;
+        }
+
+        if (ftruncate(m_fd_gamestate, 10000) == -1) {
+            std::cerr << "Error: Can't resize gamestate file!";
+            return;
+        }
+
+        m_mmap_ptr_gamestate = mmap(NULL, 10000, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd_gamestate, 0);
+        if (m_mmap_ptr_gamestate == MAP_FAILED) {
+            std::cerr << "Error: Can't memory-map game state file!";
+            return;
         }
     }
 }
@@ -313,13 +338,16 @@ void GameStateExtractor::ProcessGameState()
     //std::cout << "Number of differing pixels: " << numPixels << "\n";
     if (numPixels > 4000)
     {
+        *((int *)m_mmap_ptr_gamestate) = 0;
+        *(((int *)m_mmap_ptr_gamestate) + 1) = 0;
+        *(((int *)m_mmap_ptr_gamestate) + 2) = 0;
+        *(((int *)m_mmap_ptr_gamestate) + 3) = 0;
         return;
     }
 
     _DetectDiffRegions();
     for (std::vector<GameScreenRegion>::iterator it = _regions.begin(); it != _regions.end(); ++it) {
-        //std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY <<
-            //") to (" << it->highX << ", " << it->highY << ")\n";
+        //std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY << ") to (" << it->highX << ", " << it->highY << ")\n";
 
         int maxScore = 0;
         int bestSprite = -1;
@@ -355,8 +383,7 @@ void GameStateExtractor::ProcessGameState()
                 }
             }
         }
-        //std::cout << "Best matching sprite: " << m_spriteStateConfig[bestSprite].bgraFilename <<
-            //" with score " << maxScore << " at (" << posX << ", " << posY << ")\n";
+        //std::cout << "Best matching sprite: " << m_spriteStateConfig[bestSprite].bgraFilename << " with score " << maxScore << " at (" << posX << ", " << posY << ")\n";
 
         if (maxScore > 20)
         {
@@ -368,6 +395,50 @@ void GameStateExtractor::ProcessGameState()
         }
     }
 
+    bool marioFound = false, luigiFound = false;
+    for (std::vector<GameObjectState>::iterator it = _gameObjects.begin(); it != _gameObjects.end(); ++it) {
+        GameObjectState g = *it;
+        if (g.gameObject == MarioBumpLeft ||
+            g.gameObject == MarioDazed ||
+            g.gameObject == MarioDead || 
+            g.gameObject == MarioJumpLeft ||
+            g.gameObject == MarioJumpRight ||
+            g.gameObject == MarioStandLeft ||
+            g.gameObject == MarioStandRight ||
+            g.gameObject == MarioWalkLeft ||
+            g.gameObject == MarioWalkRight)
+        {
+            *((int *)m_mmap_ptr_gamestate) = g.posX;
+            *(((int *)m_mmap_ptr_gamestate) + 1) = g.posY;
+            marioFound = true;
+        }
+
+        if (g.gameObject == LuigiBumpLeft ||
+            g.gameObject == LuigiDazed ||
+            g.gameObject == LuigiDead || 
+            g.gameObject == LuigiJumpLeft ||
+            g.gameObject == LuigiJumpRight ||
+            g.gameObject == LuigiStandLeft ||
+            g.gameObject == LuigiStandRight ||
+            g.gameObject == LuigiWalkLeft ||
+            g.gameObject == LuigiWalkRight)
+        {
+            *(((int *)m_mmap_ptr_gamestate) + 2) = g.posX;
+            *(((int *)m_mmap_ptr_gamestate) + 3) = g.posY;
+            luigiFound = true;
+        }
+
+    }
+
+    if (!marioFound)
+    {
+        std::cerr << "Mario not found\n";
+    }
+
+    if (!luigiFound)
+    {
+        std::cerr << "Luigi not found\n";
+    }
 }
 
 // debug function

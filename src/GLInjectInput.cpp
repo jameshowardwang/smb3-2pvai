@@ -242,7 +242,7 @@ void GLInjectInput::InputThread() {
 
 	} catch(const std::exception& e) {
 		m_error_occurred = true;
-		Logger::LogError(std::string("[GLInjectInput::InputThread] Exception ") + e.what() + "in input thread.");
+		Logger::LogError(std::string("[GLInjectInput::InputThread] Exception ") + e.what() + " in input thread.");
 	} catch(...) {
 		m_error_occurred = true;
 		Logger::LogError("[GLInjectInput::InputThread] Unknown exception in input thread.");
