@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <unistd.h>
 #include <sys/file.h>
@@ -16,6 +17,7 @@ static unsigned char m_emptyGameScreen[GAMESCREEN_HEIGHT][GAMESCREEN_WIDTH];
 static unsigned char m_spriteData[m_numSprites][SPRITE_HEIGHT][SPRITE_WIDTH];
 int m_fd_gamestate;
 void *m_mmap_ptr_gamestate;
+int m_bad_counter;
 
 
 class GameScreenRegion
@@ -27,6 +29,10 @@ public:
     int lowX, highX;
     int lowY, highY;
     int numPixels;
+
+    // debug purposes
+    int scoreMatch;
+    std::string spriteMatched;
 };
 
 GameStateExtractor::GameStateExtractor()
@@ -73,6 +79,8 @@ GameStateExtractor::GameStateExtractor()
             std::cerr << "Error: Can't memory-map game state file!";
             return;
         }
+
+        m_bad_counter = 0;
     }
 }
 
@@ -289,10 +297,6 @@ void GameStateExtractor::_DetectDiffRegions()
                 {
                     _regions.push_back(region);
                 }
-                else
-                {
-                    //std::cout << "Detected a region of size " << region.numPixels << "\n";
-                }
             }
         }
     }
@@ -335,7 +339,6 @@ void GameStateExtractor::ProcessGameState()
     _gameObjects.clear();
 
     int numPixels = _CalculateBitmapDiff();
-    //std::cout << "Number of differing pixels: " << numPixels << "\n";
     if (numPixels > 4000)
     {
         *((int *)m_mmap_ptr_gamestate) = 0;
@@ -347,8 +350,6 @@ void GameStateExtractor::ProcessGameState()
 
     _DetectDiffRegions();
     for (std::vector<GameScreenRegion>::iterator it = _regions.begin(); it != _regions.end(); ++it) {
-        //std::cout << "Region with " << it->numPixels << " pixels detected from (" << it->lowX << ", " << it->lowY << ") to (" << it->highX << ", " << it->highY << ")\n";
-
         int maxScore = 0;
         int bestSprite = -1;
         int posX, posY;
@@ -383,7 +384,6 @@ void GameStateExtractor::ProcessGameState()
                 }
             }
         }
-        //std::cout << "Best matching sprite: " << m_spriteStateConfig[bestSprite].bgraFilename << " with score " << maxScore << " at (" << posX << ", " << posY << ")\n";
 
         if (maxScore > 20)
         {
@@ -393,12 +393,19 @@ void GameStateExtractor::ProcessGameState()
                     posY+8);
             _gameObjects.push_back(g);
         }
+
+        // for debug only
+        it->scoreMatch = maxScore;
+        it->spriteMatched = bestSprite != -1 ? 
+                m_spriteStateConfig[bestSprite].bgraFilename :
+                "noMatch";
     }
 
     bool marioFound = false, luigiFound = false;
     for (std::vector<GameObjectState>::iterator it = _gameObjects.begin(); it != _gameObjects.end(); ++it) {
         GameObjectState g = *it;
         if (g.gameObject == MarioBumpLeft ||
+            g.gameObject == MarioBumpRight ||
             g.gameObject == MarioDazed ||
             g.gameObject == MarioDead || 
             g.gameObject == MarioJumpLeft ||
@@ -414,6 +421,7 @@ void GameStateExtractor::ProcessGameState()
         }
 
         if (g.gameObject == LuigiBumpLeft ||
+            g.gameObject == LuigiBumpRight ||
             g.gameObject == LuigiDazed ||
             g.gameObject == LuigiDead || 
             g.gameObject == LuigiJumpLeft ||
@@ -433,35 +441,54 @@ void GameStateExtractor::ProcessGameState()
     if (!marioFound)
     {
         std::cerr << "Mario not found\n";
+        std::stringstream filename;
+        filename << "no-mario-" << m_bad_counter++ << ".bgra";
+        _WriteBGRADataToFile(filename.str());
+        filename << ".rgn";
+        _WriteRegionsToFile(filename.str());
     }
 
     if (!luigiFound)
     {
         std::cerr << "Luigi not found\n";
+        std::stringstream filename("no-luigi-");
+        filename << "no-luigi-" << m_bad_counter++ << ".bgra";
+        _WriteBGRADataToFile(filename.str());
+        filename << ".rgn";
+        _WriteRegionsToFile(filename.str());
     }
+
 }
 
 // debug function
-void GameStateExtractor::_WriteRGBDataToFile(const std::string &filename)
+void GameStateExtractor::_WriteBGRADataToFile(const std::string &filename)
 {
     std::ofstream file(filename, std::ofstream::trunc);
     for (int i = 0; i < GAMESCREEN_HEIGHT; i++)
     {
         for (int j = 0; j < GAMESCREEN_WIDTH; j++)
         {
-            file << (int) m_emptyGameScreen[i][j] << "-" << (int) _gameScreen[i][j] << "\n";
-            /*
-               ColorRGB c = SMB2PVPalette[_gameScreen[i][j]];
-               if (_gameScreen[i][j] == 0)
-               {
-               file << (char) 0 << (char) 0 << (char) 0 << (char) 0;
-               }
-               else
-               {
-               file << c.blue << c.green << c.red << (char) 255;
-               }
-             */
+            ColorRGB c = SMB2PVPalette[_gameScreen[i][j]];
+            if (_gameScreen[i][j] == 0)
+            {
+                file << (char) 0 << (char) 0 << (char) 0 << (char) 0;
+            }
+            else
+            {
+                file << c.blue << c.green << c.red << (char) 255;
+            }
         }
     }
+    file.close();
+}
+
+void GameStateExtractor::_WriteRegionsToFile(const std::string &filename)
+{
+    std::ofstream file(filename, std::ofstream::trunc);
+    
+    for (std::vector<GameScreenRegion>::iterator it = _regions.begin(); it != _regions.end(); ++it) {
+        file << "(" << it->lowX << ", " << it->lowY << ") (" << it->highX << ", " << it->highY << ") " << it->scoreMatch << " " << it->spriteMatched << "\n";
+    }
+
     file.close();
 }

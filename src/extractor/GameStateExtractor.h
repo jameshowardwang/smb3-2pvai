@@ -63,7 +63,8 @@ private:
     void _DetectDiffRegions();
     int _SpriteMatchScoreAtLocation(unsigned char sprite[SPRITE_HEIGHT][SPRITE_WIDTH], int x, int y);
 
-    void _WriteRGBDataToFile(const std::string &filename);
+    void _WriteBGRADataToFile(const std::string &filename);
+    void _WriteRegionsToFile(const std::string &filename);
 
     unsigned char _gameScreen[GAMESCREEN_HEIGHT][GAMESCREEN_WIDTH];
     int _gameScreenDiff[GAMESCREEN_HEIGHT][GAMESCREEN_WIDTH];
