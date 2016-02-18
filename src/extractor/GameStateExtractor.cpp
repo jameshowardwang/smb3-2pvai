@@ -44,14 +44,14 @@ GameStateExtractor::GameStateExtractor()
                 (unsigned char *)m_emptyGameScreen,
                 GAMESCREEN_WIDTH,
                 GAMESCREEN_HEIGHT,
-                "../../images/bgra/Board-empty.bgra",
+                "images/bgra/Board-empty.bgra",
                 GAMESCREEN_WIDTH,
                 GAMESCREEN_HEIGHT,
                 GAMESCREEN_WIDTH*4);
 
         for (int i = 0; i < (int) m_numSprites; i++)
         {
-            std::string filename = std::string("../../images/sprites/bgra/") +
+            std::string filename = std::string("images/sprites/bgra/") +
                 m_spriteStateConfig[i].bgraFilename;
             _InitPaletteArrayFromFrameBufferFile(
                     (unsigned char *)m_spriteData[i],

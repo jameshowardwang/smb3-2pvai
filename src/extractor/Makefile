@@ -10,10 +10,11 @@ EXECUTABLE=gsextract
 all: $(SOURCES) $(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	mkdir -p ../../build
+	$(CC) $(LDFLAGS) $(OBJECTS) -o ../../build/$@
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm *.o $(EXECUTABLE)
+	rm -f *.o ../../build/$(EXECUTABLE)
